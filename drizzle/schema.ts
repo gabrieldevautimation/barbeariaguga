@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, datetime } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, datetime, unique } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -72,7 +72,10 @@ export const appointments = mysqlTable("appointments", {
   noShowReason: text("noShowReason"), // reason client provided for not showing up
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+  // Unique constraint: prevents duplicate appointments for the same barber at the same date/time
+  uniqueAppointment: unique().on(table.barberId, table.appointmentDate, table.appointmentTime),
+}));
 
 export type Appointment = typeof appointments.$inferSelect;
 export type InsertAppointment = typeof appointments.$inferInsert;

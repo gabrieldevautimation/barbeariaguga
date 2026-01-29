@@ -19,7 +19,7 @@ function verifyPassword(password: string, hash: string): boolean {
 
 export const appRouter = router({
   system: systemRouter,
-  
+
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
@@ -47,7 +47,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const barber = await db.getBarberByName(input.name);
-        
+
         if (!barber || !verifyPassword(input.password, barber.password)) {
           throw new TRPCError({
             code: 'UNAUTHORIZED',
@@ -57,9 +57,9 @@ export const appRouter = router({
 
         // Set barber session cookie
         const cookieOptions = getSessionCookieOptions(ctx.req);
-        ctx.res.cookie('barber_session', JSON.stringify({ 
-          id: barber.id, 
-          name: barber.name 
+        ctx.res.cookie('barber_session', JSON.stringify({
+          id: barber.id,
+          name: barber.name
         }), {
           ...cookieOptions,
           maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
@@ -75,7 +75,7 @@ export const appRouter = router({
     me: publicProcedure.query(({ ctx }) => {
       const barberCookie = ctx.req.cookies?.barber_session;
       if (!barberCookie) return null;
-      
+
       try {
         return JSON.parse(barberCookie);
       } catch {
@@ -105,21 +105,22 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         const dateStr = input.appointmentDate;
         const [year, month, day] = dateStr.split('-').map(Number);
-        const appointmentDate = new Date(year, month - 1, day, 12, 0, 0);
-        
+        // Use Date.UTC to prevent timezone conversion issues
+        const appointmentDate = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+
         const hasConflict = await db.checkAppointmentConflict(
           input.barberId,
           appointmentDate,
           input.appointmentTime
         );
-        
+
         if (hasConflict) {
           throw new TRPCError({
             code: 'CONFLICT',
             message: 'Este horario ja esta agendado para este barbeiro. Escolha outro horario.',
           });
         }
-        
+
         const appointment = await db.createAppointment({
           userId: ctx.user.id,
           barberId: input.barberId,
@@ -138,7 +139,7 @@ export const appRouter = router({
     // Get appointments for logged-in user
     myAppointments: protectedProcedure.query(async ({ ctx }) => {
       const userAppointments = await db.getAppointmentsByUserId(ctx.user.id);
-      
+
       // Enrich with barber and service details
       const enriched = await Promise.all(
         userAppointments.map(async (apt) => {
@@ -162,7 +163,7 @@ export const appRouter = router({
       }))
       .query(async ({ input }) => {
         const barberAppointments = await db.getUpcomingAppointmentsByBarberId(input.barberId);
-        
+
         // Enrich with service details
         const enriched = await Promise.all(
           barberAppointments.map(async (apt) => {
@@ -186,7 +187,7 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const date = new Date(input.date);
         const barberAppointments = await db.getAppointmentsByBarberIdAndDate(input.barberId, date);
-        
+
         const enriched = await Promise.all(
           barberAppointments.map(async (apt) => {
             const service = await db.getServiceById(apt.serviceId);
@@ -207,7 +208,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const appointment = await db.getAppointmentById(input.appointmentId);
-        
+
         if (!appointment) {
           throw new TRPCError({
             code: 'NOT_FOUND',
@@ -250,7 +251,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         const appointment = await db.getAppointmentById(input.appointmentId);
-        
+
         if (!appointment) {
           throw new TRPCError({
             code: 'NOT_FOUND',
@@ -260,7 +261,7 @@ export const appRouter = router({
 
         await db.markAppointmentAsNoShow(input.appointmentId);
         await db.incrementUserNoShowCount(appointment.userId);
-        
+
         const user = await db.getUserById(appointment.userId);
         if (user && user.email) {
           const barber = await db.getBarberById(appointment.barberId);
