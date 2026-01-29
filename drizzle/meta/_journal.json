@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1766169953497,
+      "tag": "0000_light_morg",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1766170074994,
+      "tag": "0001_closed_bruce_banner",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1766234874525,
+      "tag": "0002_thin_firedrake",
+      "breakpoints": true
+    }
+  ]
+}
