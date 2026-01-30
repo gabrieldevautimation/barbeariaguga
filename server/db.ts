@@ -1,5 +1,6 @@
 import { eq, and, gte, lte, ne } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import { InsertUser, users, barbers, services, appointments, InsertAppointment } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -9,7 +10,8 @@ let _db: ReturnType<typeof drizzle> | null = null;
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      const client = postgres(process.env.DATABASE_URL, { ssl: 'require' });
+      _db = drizzle(client);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -68,7 +70,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       updateSet.lastSignedIn = new Date();
     }
 
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
+    await db.insert(users).values(values).onConflictDoUpdate({
+      target: users.openId,
       set: updateSet,
     });
   } catch (error) {
@@ -93,7 +96,7 @@ export async function getUserByOpenId(openId: string) {
 export async function getAllBarbers() {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(barbers).where(eq(barbers.isActive, 1));
+  return await db.select().from(barbers).where(eq(barbers.isActive, true));
 }
 
 export async function getBarberById(id: number) {
@@ -154,13 +157,13 @@ export async function getAppointmentById(id: number) {
 export async function checkAppointmentConflict(barberId: number, appointmentDate: Date, appointmentTime: string) {
   const db = await getDb();
   if (!db) return false;
-  
+
   // Get start and end of the day
   const startOfDay = new Date(appointmentDate);
   startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(appointmentDate);
   endOfDay.setHours(23, 59, 59, 999);
-  
+
   const existing = await db.select().from(appointments)
     .where(
       and(
@@ -171,7 +174,7 @@ export async function checkAppointmentConflict(barberId: number, appointmentDate
         ne(appointments.status, 'cancelled')
       )
     );
-  
+
   return existing.length > 0;
 }
 
@@ -185,13 +188,13 @@ export async function cancelAppointment(id: number) {
 export async function getAppointmentsByBarberIdAndDate(barberId: number, date: Date) {
   const db = await getDb();
   if (!db) return [];
-  
+
   // Get start and end of the day
   const startOfDay = new Date(date);
   startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(date);
   endOfDay.setHours(23, 59, 59, 999);
-  
+
   return await db.select().from(appointments)
     .where(
       and(
@@ -206,9 +209,9 @@ export async function getAppointmentsByBarberIdAndDate(barberId: number, date: D
 export async function getUpcomingAppointmentsByBarberId(barberId: number) {
   const db = await getDb();
   if (!db) return [];
-  
+
   const now = new Date();
-  
+
   return await db.select().from(appointments)
     .where(
       and(
@@ -234,16 +237,16 @@ export async function markAppointmentAsNoShow(id: number) {
 export async function incrementUserNoShowCount(userId: number) {
   const db = await getDb();
   if (!db) return undefined;
-  
+
   const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   if (user.length === 0) return undefined;
-  
+
   const newCount = (user[0].noShowCount || 0) + 1;
   const isBlocked = newCount >= 2;
-  
-  return await db.update(users).set({ 
+
+  return await db.update(users).set({
     noShowCount: newCount,
-    isBlocked: isBlocked ? 1 : 0
+    isBlocked: isBlocked
   }).where(eq(users.id, userId));
 }
 
