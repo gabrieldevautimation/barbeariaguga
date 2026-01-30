@@ -1,8 +1,10 @@
-import { drizzle } from "drizzle-orm/mysql2";
-import { barbers, services } from "./drizzle/schema.js";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import { barbers, services } from "./drizzle/schema.ts";
 import "dotenv/config";
 
-const db = drizzle(process.env.DATABASE_URL);
+const client = postgres(process.env.DATABASE_URL, { ssl: 'require' });
+const db = drizzle(client);
 
 // Simple password hashing (same as in routers.ts)
 function hashPassword(password) {
@@ -19,28 +21,28 @@ async function seed() {
       description: "Especialista em cortes clássicos e modernos",
       imageUrl: null,
       password: hashPassword("barber123"),
-      isActive: 1,
+      isActive: true,
     },
     {
       name: "João Santos",
       description: "Expert em barbas e degradês",
       imageUrl: null,
       password: hashPassword("barber123"),
-      isActive: 1,
+      isActive: true,
     },
     {
       name: "Pedro Oliveira",
       description: "Mestre em cortes estilizados",
       imageUrl: null,
       password: hashPassword("barber123"),
-      isActive: 1,
+      isActive: true,
     },
     {
       name: "Lucas Ferreira",
       description: "Especialista em design de barba",
       imageUrl: null,
       password: hashPassword("barber123"),
-      isActive: 1,
+      isActive: true,
     },
   ];
 
@@ -54,42 +56,42 @@ async function seed() {
       description: "Corte clássico com tesoura e máquina",
       price: "R$ 40,00",
       duration: 30,
-      isFeatured: 1,
+      isFeatured: true,
     },
     {
       name: "Corte + Barba",
       description: "Corte completo com design de barba",
       price: "R$ 60,00",
       duration: 45,
-      isFeatured: 1,
+      isFeatured: true,
     },
     {
       name: "Barba",
       description: "Aparar e modelar barba",
       price: "R$ 30,00",
       duration: 20,
-      isFeatured: 0,
+      isFeatured: false,
     },
     {
       name: "Degradê",
       description: "Corte degradê moderno",
       price: "R$ 45,00",
       duration: 35,
-      isFeatured: 1,
+      isFeatured: true,
     },
     {
       name: "Sobrancelha",
       description: "Design de sobrancelha",
       price: "R$ 15,00",
       duration: 10,
-      isFeatured: 0,
+      isFeatured: false,
     },
     {
       name: "Pigmentação",
       description: "Pigmentação de barba ou cabelo",
       price: "R$ 80,00",
       duration: 60,
-      isFeatured: 0,
+      isFeatured: false,
     },
   ];
 
@@ -102,7 +104,7 @@ async function seed() {
   console.log("Nome: João Santos | Senha: barber123");
   console.log("Nome: Pedro Oliveira | Senha: barber123");
   console.log("Nome: Lucas Ferreira | Senha: barber123");
-  
+
   process.exit(0);
 }
 

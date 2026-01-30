@@ -1,8 +1,10 @@
-import { drizzle } from "drizzle-orm/mysql2";
-import { barbers } from "./drizzle/schema.js";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import { barbers } from "./drizzle/schema.ts";
 import "dotenv/config";
 
-const db = drizzle(process.env.DATABASE_URL);
+const client = postgres(process.env.DATABASE_URL, { ssl: 'require' });
+const db = drizzle(client);
 
 try {
   const result = await db.select().from(barbers);
