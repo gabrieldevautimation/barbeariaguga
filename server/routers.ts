@@ -24,9 +24,9 @@ export const appRouter = router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+      // ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       // Also clear barber session if exists
-      ctx.res.clearCookie('barber_session', { ...cookieOptions, maxAge: -1 });
+      // ctx.res.clearCookie('barber_session', { ...cookieOptions, maxAge: -1 });
       return {
         success: true,
       } as const;
@@ -73,14 +73,16 @@ export const appRouter = router({
 
     // Get current barber from session
     me: publicProcedure.query(({ ctx }) => {
-      const barberCookie = ctx.req.cookies?.barber_session;
-      if (!barberCookie) return null;
+      // DEBUG: Temporarily commented out to isolate auth issues
+      // const barberCookie = ctx.req.cookies?.barber_session;
+      // if (!barberCookie) return null;
 
-      try {
-        return JSON.parse(barberCookie);
-      } catch {
-        return null;
-      }
+      // try {
+      //   return JSON.parse(barberCookie);
+      // } catch {
+      //   return null;
+      // }
+      return null;
     }),
   }),
 
