@@ -1,0 +1,29 @@
+{
+    "version": 2,
+    "builds": [
+        {
+            "src": "package.json",
+            "use": "@vercel/node",
+            "config": {
+                "includeFiles": [
+                    "dist/**"
+                ]
+            }
+        }
+    ],
+    "routes": [
+        {
+            "src": "/api/oauth/callback",
+            "dest": "dist/index.js"
+        },
+        {
+            "src": "/api/trpc/(.*)",
+            "dest": "dist/index.js"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/dist/public/$1"
+        }
+    ],
+    "outputDirectory": "dist/public"
+}
