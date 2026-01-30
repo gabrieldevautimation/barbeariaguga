@@ -1,8 +1,7 @@
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
-import type { Express, Request, Response } from "express";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
+import { signSimpleToken } from "./simpleAuth";
 
 function getQueryParam(req: Request, key: string): string | undefined {
   const value = req.query[key];
@@ -36,13 +35,22 @@ export function registerOAuthRoutes(app: Express) {
         lastSignedIn: new Date(),
       });
 
-      const sessionToken = await sdk.createSessionToken(userInfo.openId, {
-        name: userInfo.name || "",
-        expiresInMs: ONE_YEAR_MS,
+      // Fetch user to get the internal ID
+      const user = await db.getUserByOpenId(userInfo.openId);
+      if (!user) {
+        throw new Error("Failed to retrieve user after upsert");
+      }
+
+      const sessionToken = await signSimpleToken({
+        id: user.id,
+        openId: user.openId,
+        name: user.name || "",
+        role: user.role
       });
 
       const cookieOptions = getSessionCookieOptions(req);
-      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+      // Set 'session_token' expected by new context
+      res.cookie("session_token", sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
       res.redirect(302, "/");
     } catch (error) {
