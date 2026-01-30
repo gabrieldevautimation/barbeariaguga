@@ -36,6 +36,12 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+
+  // Health check endpoint (Diagnostic)
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", env: process.env.NODE_ENV, vercel: !!process.env.VERCEL });
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",
@@ -48,7 +54,10 @@ async function startServer() {
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {
-    serveStatic(app);
+    // Na Vercel, o frontend é servido pelo CDN via vercel.json rewrites.
+    // O Express DEVE atuar apenas como API. Servir estáticos aqui causa conflito/erro 500.
+    // serveStatic(app);
+    console.log("Vercel mode: Static serving disabled (handled by Vercel CDN)");
   }
 
   // Only start listening if we're not on Vercel/Production lambda
