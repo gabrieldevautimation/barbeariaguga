@@ -10,9 +10,15 @@ let _db: ReturnType<typeof drizzle> | null = null;
 export async function getDb() {
   if (!_db && ENV.databaseUrl) {
     try {
-      const client = postgres(ENV.databaseUrl, { ssl: 'require' });
+      // Serverless: max 1 connection to prevent exhaustion
+      const client = postgres(ENV.databaseUrl, {
+        ssl: 'require',
+        max: 1,
+        idle_timeout: 20,
+        connect_timeout: 10
+      });
       _db = drizzle(client);
-      console.log('[Database] Connected successfully');
+      console.log('[Database] Connected successfully (Serverless mode)');
     } catch (error) {
       console.error("[Database] Failed to connect:", error);
       _db = null;
